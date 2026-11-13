@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ACNES CLOUD | Panel General</title>
+
+    <link rel="icon" type="image/png" href="https://acnespublicidad.com/FAVIACNES.png">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- LIBRERÍAS DE FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 15px; overflow-x: hidden; width: 100%; box-sizing: border-box; }
+        .header-admin { text-align: center; margin-bottom: 25px; border-bottom: 1px solid rgba(0, 255, 247, 0.2); padding-bottom: 15px; }
+        .header-admin h1 { font-family: 'Montserrat', sans-serif; color: #00fff7; font-size: 1.6rem; margin: 0; }
+        .cloud-badge { display: inline-block; background: #0761b5; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; vertical-align: middle; margin-left: 10px; font-family: 'Montserrat', sans-serif;}
+
+        .layout-container { display: grid; grid-template-columns: 380px 1fr; gap: 30px; max-width: 1300px; margin: 0 auto; align-items: start; }
+        
+        /* CONTENEDOR SEPARADO PARA EL INBOX */
+        .panel-inbox { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid rgba(0, 230, 118, 0.4); box-shadow: 0 10px 30px rgba(0,0,0,0.5); box-sizing: border-box; margin-bottom: 25px; }
+        
+        .panel-formulario { background-color: #111111; padding: 20px; border-radius: 12px; border: 1px solid rgba(0, 255, 247, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.5); box-sizing: border-box; }
+        .section-title { color: #00fff7; font-family: 'Montserrat', sans-serif; font-size: 0.9rem; margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px; text-transform: uppercase; }
+        .inbox-title { color: #00e676; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-family: 'Montserrat', sans-serif; font-size: 0.75rem; color: #ccc; text-transform: uppercase; font-weight: 700; }
+        .form-control { width: 100%; padding: 10px; background-color: #000000; border: 1px solid #333; color: #fff; border-radius: 8px; font-family: 'Roboto', sans-serif; font-size: 0.9rem; box-sizing: border-box; transition: all 0.3s ease; }
+        .form-control:focus { outline: none; border-color: #00fff7; box-shadow: 0 0 8px rgba(0, 255, 247, 0.3); }
+        textarea.form-control { resize: vertical; min-height: 70px; }
+
+        .proyecto-form-block { background-color: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #0761b5; display: none; }
+        .proyecto-form-block h4 { margin: 0 0 15px 0; color: #0761b5; font-family: 'Montserrat', sans-serif; font-size: 0.85rem; text-transform: uppercase; }
+
+        .label-with-btn { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .label-with-btn label { margin-bottom: 0; }
+        .btn-clear-img { color: #ff3333; font-size: 0.65rem; cursor: pointer; font-family: 'Montserrat', sans-serif; font-weight: bold; background: #1a1a1a; padding: 3px 8px; border-radius: 4px; border: 1px solid #ff3333; display: none; transition: 0.3s; }
+        .btn-clear-img:hover { background: #ff3333; color: #fff; }
+
+        .internal-file-link { color: #00fff7; font-size: 0.8rem; text-decoration: none; border: 1px dashed #00fff7; padding: 8px 12px; border-radius: 6px; display: inline-block; font-family: 'Montserrat', sans-serif; margin-top: 10px; background: #000;}
+        .internal-file-link:hover { background: #00fff7; color: #000; }
+
+        .btn-generar { width: 100%; background-color: #00fff7; color: #000; border: none; padding: 14px; border-radius: 50px; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.95rem; cursor: pointer; margin-top: 20px; transition: all 0.3s ease; text-transform: uppercase; }
+        .btn-generar:hover { background-color: #ffffff; box-shadow: 0 0 20px rgba(0, 255, 247, 0.6); transform: translateY(-2px); }
+        
+        .btn-guardar-nube { width: 100%; background-color: #111; color: #00fff7; border: 1px dashed #00fff7; padding: 12px; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: 0.3s; text-transform: uppercase; margin-bottom: 10px; }
+        .btn-guardar-nube:hover { background-color: #00fff7; color: #000; }
+        .btn-guardar-nube:disabled { border-color: #444; color: #666; cursor: not-allowed; background-color: #111; }
+
+        /* Botón de limpiar formulario */
+        .btn-limpiar { width: 100%; background-color: #222; color: #ff5555; border: 1px solid #ff5555; padding: 10px; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.75rem; cursor: pointer; transition: 0.3s; text-transform: uppercase; margin-bottom: 15px; }
+        .btn-limpiar:hover { background-color: #ff5555; color: #fff; }
+
+        .saved-item { background: #1a1a1a; padding: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; border-left: 3px solid #00fff7; margin-bottom: 8px; }
+        .saved-item.archivada { border-left-color: #888; background: #151515; }
+        .saved-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .saved-title { font-size: 0.8rem; color: #ddd; font-family: 'Roboto', sans-serif; line-height: 1.3;}
+        .saved-title strong { color: #fff; font-family: 'Montserrat', sans-serif;}
+        .saved-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+        
+        .saved-btn { background: #222; border: 1px solid #444; color: #fff; padding: 5px 8px; cursor: pointer; border-radius: 4px; font-size: 0.65rem; font-family: 'Montserrat', sans-serif; font-weight: bold; flex: 1; text-align: center;}
+        .saved-btn.load { color: #00fff7; border-color: #00fff7; }
+        .saved-btn.load:hover { background: #00fff7; color: #000; }
+        .saved-btn.archivar { color: #ffeb3b; border-color: #ffeb3b; }
+        .saved-btn.archivar:hover { background: #ffeb3b; color: #000; }
+        .saved-btn.restaurar { color: #4caf50; border-color: #4caf50; }
+        .saved-btn.restaurar:hover { background: #4caf50; color: #fff; }
+        .saved-btn.delete { color: #ff3333; border-color: #ff3333; flex: 0.3;}
+        .saved-btn.delete:hover { background: #ff3333; color: #fff; }
+        
+        #loading-cloud { font-size: 0.8rem; color: #00fff7; text-align: center; margin-bottom: 10px; display: none; }
+        
+        .toggle-archivo-btn { width: 100%; background: #1a1a1a; color: #aaa; border: 1px solid #333; padding: 10px; margin-top: 15px; border-radius: 6px; cursor: pointer; font-family: 'Montserrat', sans-serif; font-size: 0.75rem; transition: 0.3s; }
+        .toggle-archivo-btn:hover { background: #222; color: #fff; }
+        #seccion-archivadas { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #333; }
+
+        .panel-vista-previa { display: flex; justify-content: center; background-color: #1a1a1a; padding: 20px; border-radius: 12px; border: 1px dashed #333; width: 100%; box-sizing: border-box; overflow: hidden; }
+        #documento-imagen { width: 800px !important; min-width: 800px !important; max-width: 800px !important; background-color: #ffffff !important; color: #000000; position: relative; box-sizing: border-box; box-shadow: 0 0 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; padding: 0; margin: 0 auto; }
+
+        .doc-header-banner { width: 100%; background-color: #000000; padding: 25px; display: flex; justify-content: center; align-items: center; border-bottom: 5px solid #00fff7; box-sizing: border-box; }
+        .logo-acnes { height: 65px; object-fit: contain; filter: brightness(0) invert(1); }
+        .doc-body { padding: 35px 40px; flex-grow: 1; display: flex; flex-direction: column; }
+        .meta-info { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; border-bottom: 3px solid #0761b5; padding-bottom: 15px; }
+        .meta-info h2 { margin: 0; font-family: 'Montserrat', sans-serif; color: #000000; font-size: 26px; font-weight: 800; }
+        .meta-info .datos-folio { text-align: right; font-weight: 700; color: #444; font-size: 15px; }
+        .text-blue { color: #0761b5; }
+        .cliente-box { background-color: #f8f9fa; padding: 15px 20px; border-left: 6px solid #0761b5; margin-bottom: 30px; font-size: 16px; border-radius: 0 8px 8px 0; }
+        .cliente-box strong { font-family: 'Montserrat', sans-serif; color: #111; }
+        
+        .content-grid { display: flex; gap: 25px; margin-bottom: 35px; }
+        /* Variante para imágenes panorámicas */
+        .content-grid.panoramico { flex-direction: column; }
+        
+        .imagenes-col { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .content-grid.panoramico .imagenes-col { flex: none; width: 100%; }
+
+        .img-container { width: 100%; background-color: #f4f4f4; border-radius: 12px; border: 2px dashed #cccccc; display: flex; align-items: center; justify-content: center; position: relative; padding: 5px; box-sizing: border-box; }
+        .ref-container { min-height: 250px; }
+        .ej-container { min-height: 150px; background-color: #fafafa; }
+        .badge-ejemplo { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: bold; color: #0761b5; font-family: 'Montserrat', sans-serif; background: rgba(255,255,255,0.8); padding: 2px 8px; border-radius: 4px; }
+        .img-container img { max-width: 100%; max-height: 350px; width: auto; height: auto; object-fit: contain !important; display: none; }
+        
+        .detalles-box { flex: 1.2; display: flex; flex-direction: column; }
+        .content-grid.panoramico .detalles-box { flex: none; width: 100%; }
+        
+        .detalles-box h3 { font-family: 'Montserrat', sans-serif; color: #0761b5; margin: 0 0 10px 0; border-bottom: 2px solid #eee; padding-bottom: 5px; font-size: 16px; }
+        .detalles-box p { font-size: 14px; line-height: 1.5; color: #333; white-space: pre-wrap; flex-grow: 1; margin: 0; }
+        .subtotal-proyecto-box { margin-top: 15px; background-color: #f4f4f4; padding: 10px 15px; border-radius: 8px; display: flex; justify-content: space-between; font-family: 'Montserrat', sans-serif; font-size: 13px; color: #111; border: 1px solid #e0e0e0; }
+        
+        .resumen-final { display: flex; gap: 25px; align-items: stretch; margin-bottom: 10px; margin-top: 10px; border-top: 2px solid #eee; padding-top: 25px; }
+        .condiciones-box { flex: 1.5; background-color: #f8f9fa; border-left: 5px solid #00fff7; padding: 15px 20px; border-radius: 0 8px 8px 0; display: none; flex-direction: column; justify-content: center; }
+        .condiciones-box h5 { margin: 0 0 8px 0; color: #0761b5; font-family: 'Montserrat', sans-serif; font-size: 14px; }
+        .condiciones-box p { margin: 0; font-size: 13px; color: #444; line-height: 1.4; white-space: pre-wrap; }
+        
+        .precio-box { flex: 1; background: linear-gradient(135deg, #0761b5 0%, #000000 100%); color: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.15); display: flex; flex-direction: column; justify-content: center; }
+        .precio-box h4 { margin: 0 0 15px 0; font-family: 'Montserrat', sans-serif; color: #00fff7; font-size: 13px; letter-spacing: 1px; text-align: center; }
+        .precio-fila { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; font-family: 'Roboto', sans-serif; }
+        #row-descuento { color: #00fff7; font-weight: 500; }
+        #row-subtotal-desc { color: #00fff7; font-weight: 500; }
+        .precio-fila-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); font-family: 'Montserrat', sans-serif; }
+        .precio-fila-total .monto { font-size: 26px; font-weight: 800; }
+
+        .logos-bottom-container { display: flex; justify-content: center; align-items: center; gap: 60px; margin-top: 20px; margin-bottom: 20px; }
+        .logos-bottom-container img { height: 60px; object-fit: contain; }
+        .olas-bottom { width: 100%; height: auto; display: block; margin-bottom: 25px; }
+        .bottom-section { padding: 20px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #eeeeee; }
+        .bottom-section h4 { margin: 0 0 15px 0; font-family: 'Montserrat', sans-serif; color: #0761b5; font-size: 15px; }
+        .bank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 13px; color: #444; }
+        .bank-grid strong { color: #111; }
+        .doc-footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 12px; color: #666; font-weight: 500; }
+        .firma-generator { text-align: center; margin-top: 15px; font-family: 'Montserrat', sans-serif; font-size: 10px; color: #999999; letter-spacing: 2px; text-transform: uppercase; }
+        .firma-generator span { color: #0761b5; font-weight: 800; }
+        .app-footer { text-align: center; margin-top: 40px; padding-bottom: 20px; font-family: 'Montserrat', sans-serif; font-size: 11px; color: #666666; letter-spacing: 2px; text-transform: uppercase; width: 100%; }
+        .app-footer span { color: #00fff7; font-weight: 800; }
+
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            .layout-container { grid-template-columns: 1fr; gap: 15px; width: 100%; }
+            .panel-vista-previa { padding: 15px 5px; border: none; background-color: #1a1a1a; width: 100%; height: 60vh; display: block; overflow-x: hidden; overflow-y: auto; }
+            #documento-imagen { zoom: 0.44; }
+        }
+        
+        /* ESTILOS DEL BUZÓN DE PROSPECTOS */
+        .prospecto-item { background-color: #1a1a1a; border-left: 4px solid #00e676; padding: 15px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.3s; }
+        .prospecto-item.atendido { border-left-color: #444; opacity: 0.6; }
+        .prospecto-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .prospecto-nombre { color: #fff; font-family: 'Montserrat', sans-serif; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .prospecto-fecha { color: #888; font-size: 0.7rem; }
+        .prospecto-contacto { color: #00fff7; font-size: 0.8rem; margin-bottom: 10px; font-family: 'Roboto', sans-serif; }
+        .prospecto-mensaje { background: #000; padding: 10px; border-radius: 6px; font-size: 0.85rem; color: #ccc; margin-bottom: 12px; border: 1px dashed #333; line-height: 1.4; }
+        .prospecto-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-buzon { padding: 6px 12px; border: none; border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-b-archivo { background: #0761b5; color: #fff; text-decoration: none; }
+        .btn-b-archivo:hover { background: #00fff7; color: #000; }
+        .btn-b-atender { background: #222; color: #00e676; border: 1px solid #00e676; }
+        .btn-b-atender:hover { background: #00e676; color: #000; }
+        .btn-b-borrar { background: #222; color: #ff3333; border: 1px solid #ff3333; }
+        .btn-b-borrar:hover { background: #ff3333; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="header-admin">
+        <h1>☁️ ACNES CLOUD <span class="cloud-badge">SYNC CLOUD</span></h1>
+    </div>
+
+    <div class="layout-container">        
+        
+        <!-- COLUMNA IZQUIERDA: INBOX SEPARADO + FORMULARIO DE COTIZACIONES -->
+        <div>
+            <!-- SECCIÓN 1: PANEL INBOX (SEPARADO) -->
+            <div class="panel-inbox">
+                <div class="section-title inbox-title" style="margin-top: 0;">📬 FORMULARIOS INBOX</div>
+                <div id="buzon-prospectos">
+                    <div style="font-size: 0.8rem; color: #888;">Cargando mensajes nuevos...</div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 2: PANEL FORMULARIO DE COTIZACIONES -->
+            <div class="panel-formulario">
+                <div class="section-title" style="margin-top: 0;">☁️ Cotizaciones Activas (<span id="count-saved">0</span>/10)</div>
+                <div id="loading-cloud">Conectando a la nube... ☁️</div>
+                
+                <div id="lista-guardadas"></div>
+                
+                <button id="btn-nube" class="btn-guardar-nube" onclick="guardarCotizacionNube()">☁️ Guardar Cotización Actual</button>
+                <button id="btn-limpiar-form" class="btn-limpiar" onclick="limpiarFormularioCompleto()">🧹 Limpiar Formulario</button>
+
+                <button class="toggle-archivo-btn" onclick="toggleArchivo()">📂 Ver Cotizaciones Archivadas (<span id="count-archivadas">0</span>)</button>
+                <div id="seccion-archivadas">
+                    <div id="lista-archivadas"></div>
+                </div>
+
+                <div class="section-title">📄 Datos Generales</div>
+                <div class="form-group"><label>Nombre del Archivo (Sin .pdf)</label><input type="text" id="input-filename" class="form-control" placeholder="Ej. Cotizacion_SanPablo"></div>
+                <div class="form-group"><label>Folio (Ej. #C-591)</label><input type="text" id="input-folio" class="form-control" placeholder="Se genera automático" oninput="actualizarVista()"></div>
+                <div class="form-group"><label>Nombre del Cliente</label><input type="text" id="input-cliente" class="form-control" placeholder="Ej. Juan Pérez" oninput="actualizarVista()"></div>
+
+                <div class="section-title">📦 Cantidad a Cotizar</div>
+                <div class="form-group">
+                    <label>¿Cuántos proyectos incluirás?</label>
+                    <select id="num-proyectos" class="form-control" onchange="cambiarCantidadProyectos()" style="border-color: #0761b5; font-weight: bold;">
+                        <option value="1" selected>1 Proyecto</option><option value="2">2 Proyectos</option><option value="3">3 Proyectos</option>
+                        <option value="4">4 Proyectos</option><option value="5">5 Proyectos</option><option value="6">6 Proyectos</option>
+                    </select>
+                </div>
+
+                <div id="forms-proyectos-container"></div>
+
+                <div class="section-title">🖼️ Render General (Opcional)</div>
+                <div class="form-group">
+                    <div class="label-with-btn">
+                        <label>Sube un render o fotomontaje global</label>
+                        <span class="btn-clear-img" id="btn-clear-render" onclick="borrarImagen('input-render', 'out-render-img', null, 'box-render-final', 'btn-clear-render')">🗑️ BORRAR</span>
+                    </div>
+                    <input type="file" id="input-render" class="form-control file-input-clear" accept="image/*" onchange="cargarImagenOptimizada(event, 'out-render-img', null, 'box-render-final', 'btn-clear-render')">
+                </div>
+
+                <div class="section-title">🤝 Condiciones y Cierre</div>
+                <div class="form-group"><label>Descuento Especial (MXN) - Opcional</label><input type="number" id="input-descuento" class="form-control" placeholder="Ej. 1500" min="0" oninput="actualizarVista()"></div>
+                <div class="form-group">
+                    <label>Tiempo de Garantía (Opcional)</label>
+                    <select id="input-garantia" class="form-control" onchange="actualizarVista()">
+                        <option value="">-- Sin garantía especificada --</option>
+                        <option value="1 año de garantía en materiales y defectos de fabricación.">1 Año de Garantía</option>
+                        <option value="2 años de garantía en materiales y defectos de fabricación.">2 Años de Garantía</option>
+                        <option value="3 años de garantía en materiales y defectos de fabricación.">3 Años de Garantía</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Detalles de Instalación (Opcional)</label><textarea id="input-instalacion" class="form-control" placeholder="Ej. Incluye instalación a 3 metros..." oninput="actualizarVista()"></textarea></div>
+                
+                <div class="section-title">📁 Control Interno (Solo Nube)</div>
+                <div class="form-group">
+                    <div class="label-with-btn">
+                        <label>Archivo Editable o Plano (.AI, .CDR, .ZIP)</label>
+                        <span class="btn-clear-img" id="btn-clear-archivo-interno" onclick="quitarArchivoInterno()">🗑️ BORRAR</span>
+                    </div>
+                    <input type="file" id="input-archivo-interno" class="form-control file-input-clear" accept=".ai,.cdr,.pdf,.zip,.rar,.eps" onchange="detectarNuevoArchivo()">
+                    
+                    <div id="wrap-descargar-archivo" style="display:none; margin-top: 8px;">
+                        <a id="link-descarga-interno" href="#" target="_blank" class="internal-file-link">📥 Descargar Archivo Guardado</a>
+                    </div>
+                </div>
+
+                <button class="btn-generar" onclick="generarPDFHibrido()">📥 Generar PDF de Alta Calidad</button>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: VISTA PREVIA PDF -->
+        <div class="panel-vista-previa">
+            <div id="documento-imagen">
+                <div class="doc-header-banner"><img src="https://acnespublicidad.com/ACNES%20(1).png?v=9" alt="ACNES Logo" class="logo-acnes" crossorigin="anonymous"></div>
+                <div class="doc-body">
+                    <div class="meta-info">
+                        <h2>COTIZACIÓN</h2>
+                        <div class="datos-folio">Fecha: <span id="out-fecha" class="text-blue">--/--/----</span><br>Folio: <span id="out-folio" class="text-blue">#C-590</span></div>
+                    </div>
+                    <div class="cliente-box"><strong>Atención a:</strong> <span id="out-cliente">Nombre del Cliente</span></div>
+                    <div id="outputs-proyectos-container"></div>
+                    <div id="box-render-final" style="display: none; flex-direction: column; margin-bottom: 35px;">
+                        <h3 style="font-family: 'Montserrat', sans-serif; color: #0761b5; margin: 0 0 10px 0; border-bottom: 2px solid #eee; padding-bottom: 5px; font-size: 16px;">Render / Fotomontaje del Proyecto</h3>
+                        <div class="img-container" style="min-height: 250px; background-color: #f4f4f4; border-radius: 12px; border: 2px dashed #cccccc; display: flex; align-items: center; justify-content: center; position: relative; padding: 10px; box-sizing: border-box;">
+                            <img id="out-render-img" src="" alt="Render Final" style="max-width: 100%; max-height: 500px; width: auto; height: auto; object-fit: contain !important; display: none; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div class="resumen-final">
+                        <div class="condiciones-box" id="box-condiciones">
+                            <div id="wrap-garantia" style="display: none; margin-bottom: 12px;"><h5>🛡️ Garantía Aplicable</h5><p id="out-garantia"></p></div>
+                            <div id="wrap-instalacion" style="display: none;"><h5>🛠️ Detalles de Instalación</h5><p id="out-instalacion"></p></div>
+                        </div>
+                        <div class="precio-box">
+                            <h4>INVERSIÓN TOTAL</h4>
+                            <div class="precio-fila"><span>Total:</span><span id="out-subtotal-global">$0.00</span></div>
+                            <div class="precio-fila" id="row-descuento" style="display: none;"><span>- Descuento Especial:</span><span id="out-descuento">-$0.00</span></div>
+                            <div class="precio-fila" id="row-subtotal-desc" style="display: none;"><span>Total con Descuento:</span><span id="out-subtotal-desc">$0.00</span></div>
+                            <div class="precio-fila"><span>IVA (16%):</span><span id="out-iva">$0.00</span></div>
+                            <div class="precio-fila-total"><span style="font-size: 15px;">TOTAL FINAL:</span><span class="monto" id="out-total-final">$0.00</span></div>
+                            <div style="font-size: 10px; margin-top:8px; color:#ccc; text-align: center;">*Precios expresados en MXN.</div>
+                        </div>
+                    </div>
+                    <div class="logos-bottom-container"><img src="https://acnespublicidad.com/acnesmx.png?v=9" alt="Anuncios MX" crossorigin="anonymous"><img src="https://acnespublicidad.com/acnescom.png?v=9" alt="Anuncios COM" crossorigin="anonymous"></div>
+                    <img src="https://acnespublicidad.com/olas.png?v=9" alt="Olas ACNES" class="olas-bottom" crossorigin="anonymous">
+                    <div class="bottom-section">
+                        <h4>Datos de pago: <span style="color:#000;">Banamex</span></h4>
+                        <div class="bank-grid">
+                            <div><p><strong>Nombre:</strong> Mauricio Alejandro Lopez Islas</p><p><strong>Número de cuenta:</strong> 1207791</p></div>
+                            <div><p><strong>Cuenta CLABE:</strong> 002180701912077911</p><p><strong>Número de Tarjeta:</strong> 5204 1659 3766 5994</p></div>
+                        </div>
+                    </div>
+                    <div class="doc-footer">Nezahualcoyotl, Estado de Mexico Col. Ciudad Lago, Calle. Lago Cupatitzio 83 A, C.P. 57180.</div>
+                    <div class="firma-generator"><span>ACNES GENERATOR</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="app-footer">Herramienta de uso interno • <span>ACNES CLOUD</span></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4O9KTOhhQVeWHCmcL-Qbjleb5hiW-pDk",
+            authDomain: "acnes-generator.firebaseapp.com",
+            projectId: "acnes-generator",
+            storageBucket: "acnes-generator.firebasestorage.app",
+            messagingSenderId: "1012366310670",
+            appId: "1:1012366310670:web:880070a53a5cc04d132b5f"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        
+        let activasNube = []; 
+        let archivadasNube = [];
+        let todasLasCotizaciones = [];
+        let urlArchivoActual = "";
+
+        const formatearMoneda = (valor) => "$" + valor.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const MAX_ACTIVAS = 10; 
+
+       document.addEventListener("DOMContentLoaded", () => {
+            const fecha = new Date();
+            document.getElementById('out-fecha').innerText = fecha.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            
+            generarNuevoFolio();
+
+            construirBloquesProyectos();
+            cambiarCantidadProyectos();
+            sincronizarConNube();
+            
+            // INICIA EL BUZÓN
+            escucharBuzon(); 
+        });
+
+        // NUEVA FUNCIÓN: Genera un folio aleatorio
+        function generarNuevoFolio() {
+            const folioAleatorio = "#C-" + Math.floor(Math.random() * 900 + 100);
+            document.getElementById('input-folio').value = folioAleatorio;
+            document.getElementById('out-folio').innerText = folioAleatorio;
+        }
+
+        // NUEVA FUNCIÓN: Limpiar formulario completamente
+        function limpiarFormularioCompleto() {
+            if(!confirm("¿Estás seguro de que quieres limpiar todo el formulario para hacer una nueva cotización? Se perderán los datos no guardados.")) return;
+
+            // Restablecer inputs generales
+            document.getElementById('input-filename').value = "";
+            document.getElementById('input-cliente').value = "";
+            document.getElementById('input-garantia').value = "";
+            document.getElementById('input-instalacion').value = "";
+            document.getElementById('input-descuento').value = "";
+            document.getElementById('num-proyectos').value = "1";
+
+            // Limpiar inputs de cada proyecto
+            for(let i=1; i<=6; i++) {
+                const elCant = document.getElementById(`input-cant-${i}`);
+                if(elCant) elCant.value = "1";
+                const elPrecio = document.getElementById(`input-precio-${i}`);
+                if(elPrecio) elPrecio.value = "";
+                const elDesc = document.getElementById(`input-desc-${i}`);
+                if(elDesc) elDesc.value = "";
+                
+                // Borrar imágenes de los proyectos
+                borrarImagen(`input-foto-${i}`, `out-foto-${i}`, `placeholder-${i}`, null, `btn-clear-foto-${i}`);
+                borrarImagen(`input-ejemplo-${i}`, `out-ejemplo-${i}`, null, `box-ejemplo-${i}`, `btn-clear-ejemplo-${i}`);
+            }
+
+            // Borrar render general y archivo interno
+            borrarImagen('input-render', 'out-render-img', null, 'box-render-final', 'btn-clear-render');
+            quitarArchivoInterno();
+
+            // Generar nuevo folio y resetear vista
+            generarNuevoFolio();
+            cambiarCantidadProyectos();
+            
+            // Scroll arriba
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+
+        // CONTROL DE ARCHIVO INTERNO CON BOTÓN DE BORRAR
+        function detectarNuevoArchivo() {
+            const input = document.getElementById('input-archivo-interno');
+            const btnBorrar = document.getElementById('btn-clear-archivo-interno');
+            if(input.files.length > 0) {
+                btnBorrar.style.display = 'inline-block';
+            } else {
+                btnBorrar.style.display = 'none';
+            }
+        }
+
+        function quitarArchivoInterno() {
+            urlArchivoActual = "";
+            document.getElementById('input-archivo-interno').value = "";
+            document.getElementById('wrap-descargar-archivo').style.display = 'none';
+            document.getElementById('btn-clear-archivo-interno').style.display = 'none';
+        }
+
+        function sincronizarConNube() {
+            document.getElementById('loading-cloud').style.display = 'block';
+            
+            db.collection("cotizaciones").onSnapshot((snapshot) => {
+                document.getElementById('loading-cloud').style.display = 'none';
+                activasNube = []; archivadasNube = []; todasLasCotizaciones = [];
+
+                snapshot.forEach((doc) => {
+                    const cot = doc.data();
+                    cot.id = doc.id;
+                    todasLasCotizaciones.push(cot);
+                    if (cot.estado === 'archivada') archivadasNube.push(cot);
+                    else activasNube.push(cot);
+                });
+
+                const sortFunc = (a, b) => {
+                    let timeA = a.timestamp ? a.timestamp.seconds : 0;
+                    let timeB = b.timestamp ? b.timestamp.seconds : 0;
+                    return timeB - timeA;
+                };
+                activasNube.sort(sortFunc);
+                archivadasNube.sort(sortFunc);
+                renderizarListas();
+            }, (error) => {
+                console.error("Error Firebase:", error);
+                document.getElementById('loading-cloud').innerText = "Error de conexión a la nube.";
+            });
+        }
+
+        function renderizarListas() {
+            const contActivas = document.getElementById('lista-guardadas');
+            document.getElementById('count-saved').innerText = activasNube.length;
+            contActivas.innerHTML = "";
+            if (activasNube.length === 0) { contActivas.innerHTML = "<div style='font-size:0.8rem; color:#888; margin-bottom:10px;'>Aún no hay cotizaciones activas.</div>"; } 
+            else {
+                activasNube.forEach(cot => {
+                    let iconoArchivo = cot.archivoInterno ? "📁 " : "";
+                    contActivas.innerHTML += `
+                        <div class="saved-item">
+                            <div class="saved-header">
+                                <div class="saved-title">
+                                    <strong>${iconoArchivo}${cot.folio || 'Sin Folio'}</strong> - ${cot.cliente || 'Sin Cliente'} <br>
+                                    <span style="font-size:0.7rem; color:#aaa;">Nube: ${cot.fechaGuardado || ''}</span>
+                                </div>
+                            </div>
+                            <div class="saved-actions">
+                                <button class="saved-btn load" onclick="cargarCotizacionNube('${cot.id}')">Cargar</button>
+                                <button class="saved-btn archivar" onclick="archivarCotizacion('${cot.id}')">Archivar 📂</button>
+                                <button class="saved-btn delete" onclick="eliminarCotizacionNube('${cot.id}')">X</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const contArchivadas = document.getElementById('lista-archivadas');
+            document.getElementById('count-archivadas').innerText = archivadasNube.length;
+            contArchivadas.innerHTML = "";
+            if (archivadasNube.length === 0) { contArchivadas.innerHTML = "<div style='font-size:0.8rem; color:#888; margin-bottom:10px;'>El archivo está vacío.</div>"; } 
+            else {
+                archivadasNube.forEach(cot => {
+                    let iconoArchivo = cot.archivoInterno ? "📁 " : "";
+                    contArchivadas.innerHTML += `
+                        <div class="saved-item archivada">
+                            <div class="saved-header">
+                                <div class="saved-title">
+                                    <strong>${iconoArchivo}${cot.folio || 'Sin Folio'}</strong> - ${cot.cliente || 'Sin Cliente'} <br>
+                                    <span style="font-size:0.7rem; color:#888;">Archivada - ${cot.fechaGuardado || ''}</span>
+                                </div>
+                            </div>
+                            <div class="saved-actions">
+                                <button class="saved-btn load" onclick="cargarCotizacionNube('${cot.id}')">Cargar</button>
+                                <button class="saved-btn restaurar" onclick="restaurarCotizacion('${cot.id}')">Restaurar ⬆️</button>
+                                <button class="saved-btn delete" onclick="eliminarCotizacionNube('${cot.id}')">X</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function toggleArchivo() {
+            const sec = document.getElementById('seccion-archivadas');
+            sec.style.display = (sec.style.display === 'block') ? 'none' : 'block';
+        }
+
+        async function guardarCotizacionNube() {
+            if(activasNube.length >= MAX_ACTIVAS) {
+                alert("¡Límite alcanzado! Archiva (📂) o elimina (X) una cotización activa antes de guardar otra (Máx. 10).");
+                return;
+            }
+
+            const btn = document.getElementById('btn-nube');
+            btn.innerHTML = "☁️ Preparando...";
+            btn.disabled = true;
+
+            try {
+                let linkFinalArchivo = urlArchivoActual;
+                const inputArchivo = document.getElementById('input-archivo-interno');
+                
+                if (inputArchivo.files && inputArchivo.files.length > 0) {
+                    btn.innerHTML = "⏳ Subiendo archivo pesado...";
+                    const file = inputArchivo.files[0];
+                    const storageRef = storage.ref('archivos_internos/' + Date.now() + '_' + file.name);
+                    const snapshot = await storageRef.put(file);
+                    linkFinalArchivo = await snapshot.ref.getDownloadURL();
+                }
+
+                btn.innerHTML = "☁️ Guardando en la nube...";
+
+                const nuevaCot = {
+                    estado: 'activa',
+                    fechaGuardado: new Date().toLocaleString('es-MX'),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    filename: document.getElementById('input-filename').value,
+                    folio: document.getElementById('input-folio').value,
+                    cliente: document.getElementById('input-cliente').value,
+                    numProyectos: document.getElementById('num-proyectos').value,
+                    garantia: document.getElementById('input-garantia').value,
+                    instalacion: document.getElementById('input-instalacion').value,
+                    descuento: document.getElementById('input-descuento').value,
+                    renderFinal: document.getElementById('out-render-img').src,
+                    archivoInterno: linkFinalArchivo,
+                    proyectos: []
+                };
+
+                for(let i=1; i<=6; i++) {
+                    const elImgFoto = document.getElementById(`out-foto-${i}`);
+                    // Guardamos si la foto principal es panorámica o no
+                    let isPanoramica = elImgFoto && elImgFoto.getAttribute('data-is-panoramica') === 'true';
+
+                    nuevaCot.proyectos.push({
+                        cant: document.getElementById(`input-cant-${i}`).value,
+                        precio: document.getElementById(`input-precio-${i}`).value,
+                        desc: document.getElementById(`input-desc-${i}`).value,
+                        foto: elImgFoto ? elImgFoto.src : '',
+                        isPanoramica: isPanoramica,
+                        ejemplo: document.getElementById(`out-ejemplo-${i}`).src
+                    });
+                }
+
+                await db.collection("cotizaciones").add(nuevaCot);
+
+                btn.innerHTML = "✅ ¡Guardado Exitoso!";
+                btn.style.backgroundColor = "#00e676";
+                btn.style.color = "#000";
+                setTimeout(() => {
+                    btn.innerHTML = "☁️ Guardar Cotización Actual";
+                    btn.style.backgroundColor = "#111";
+                    btn.style.color = "#00fff7";
+                    btn.disabled = false;
+                }, 3000);
+
+            } catch (error) {
+                alert("Hubo un error al guardar: " + error.message);
+                console.error(error);
+                btn.innerHTML = "☁️ Guardar Cotización Actual";
+                btn.disabled = false;
+            }
+        }
+
+        function archivarCotizacion(id) {
+            db.collection("cotizaciones").doc(id).update({ estado: 'archivada' }).catch(err => alert("Error: " + err));
+        }
+
+        function restaurarCotizacion(id) {
+            if(activasNube.length >= MAX_ACTIVAS) {
+                alert("No puedes restaurar esta cotización porque ya tienes 10 activas.");
+                return;
+            }
+            db.collection("cotizaciones").doc(id).update({ estado: 'activa' }).catch(err => alert("Error: " + err));
+        }
+
+        function cargarCotizacionNube(id) {
+            if(!confirm("¿Cargar cotización en el formulario? Esto reemplazará lo que estás editando.")) return;
+            
+            const cot = todasLasCotizaciones.find(c => c.id === id);
+            if(!cot) return;
+
+            document.getElementById('input-filename').value = cot.filename || '';
+            document.getElementById('input-folio').value = cot.folio || '';
+            document.getElementById('input-cliente').value = cot.cliente || '';
+            document.getElementById('num-proyectos').value = cot.numProyectos || '1';
+            document.getElementById('input-garantia').value = cot.garantia || '';
+            document.getElementById('input-instalacion').value = cot.instalacion || '';
+            document.getElementById('input-descuento').value = cot.descuento || '';
+
+            document.querySelectorAll('.file-input-clear').forEach(input => input.value = "");
+            setImagenUI(cot.renderFinal, 'out-render-img', null, 'box-render-final', 'btn-clear-render');
+
+            // RECUPERAR ARCHIVO EDITABLE INTERNO AL CARGAR
+            urlArchivoActual = cot.archivoInterno || "";
+            if(urlArchivoActual !== "") {
+                document.getElementById('wrap-descargar-archivo').style.display = 'block';
+                document.getElementById('link-descarga-interno').href = urlArchivoActual;
+                document.getElementById('btn-clear-archivo-interno').style.display = 'inline-block';
+            } else {
+                document.getElementById('wrap-descargar-archivo').style.display = 'none';
+                document.getElementById('btn-clear-archivo-interno').style.display = 'none';
+            }
+
+            for(let i=1; i<=6; i++) {
+                const p = cot.proyectos[i-1];
+                if(p) {
+                    document.getElementById(`input-cant-${i}`).value = p.cant || '1';
+                    document.getElementById(`input-precio-${i}`).value = p.precio || '';
+                    document.getElementById(`input-desc-${i}`).value = p.desc || '';
+                    
+                    // Si viene flag de que era panorámica de la BD, la aplicamos
+                    setImagenUI(p.foto, `out-foto-${i}`, `placeholder-${i}`, null, `btn-clear-foto-${i}`);
+                    if(p.isPanoramica) {
+                        document.getElementById(`out-foto-${i}`).setAttribute('data-is-panoramica', 'true');
+                        document.getElementById(`box-proyecto-${i}`).classList.add('panoramico');
+                    } else {
+                        document.getElementById(`out-foto-${i}`).removeAttribute('data-is-panoramica');
+                        document.getElementById(`box-proyecto-${i}`).classList.remove('panoramico');
+                    }
+
+                    setImagenUI(p.ejemplo, `out-ejemplo-${i}`, null, `box-ejemplo-${i}`, `btn-clear-ejemplo-${i}`);
+                }
+            }
+            cambiarCantidadProyectos();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function eliminarCotizacionNube(id) {
+            if(!confirm("¿Borrar definitivamente de la nube?")) return;
+            db.collection("cotizaciones").doc(id).delete().catch(error => {
+                alert("Error al eliminar: " + error.message);
+            });
+        }
+
+        function construirBloquesProyectos() {
+            const formContainer = document.getElementById('forms-proyectos-container');
+            const outputContainer = document.getElementById('outputs-proyectos-container');
+            for (let i = 1; i <= 6; i++) {
+                formContainer.innerHTML += `
+                    <div id="form-proyecto-${i}" class="proyecto-form-block">
+                        <h4>🔧 Proyecto ${i}</h4>
+                        <div class="form-group" style="display: flex; gap: 10px;">
+                            <div style="flex: 1;"><label>Cantidad</label><input type="number" id="input-cant-${i}" class="form-control" value="1" min="1" oninput="actualizarVista()"></div>
+                            <div style="flex: 2;"><label>Precio Unit. (MXN)</label><input type="number" id="input-precio-${i}" class="form-control" placeholder="Ej. 2500" oninput="actualizarVista()"></div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label-with-btn">
+                                <label>Foto Referencia</label>
+                                <span class="btn-clear-img" id="btn-clear-foto-${i}" onclick="borrarImagen('input-foto-${i}', 'out-foto-${i}', 'placeholder-${i}', null, 'btn-clear-foto-${i}')">🗑️ BORRAR</span>
+                            </div>
+                            <input type="file" id="input-foto-${i}" class="form-control file-input-clear" accept="image/*" onchange="cargarImagenOptimizada(event, 'out-foto-${i}', 'placeholder-${i}', null, 'btn-clear-foto-${i}', 'box-proyecto-${i}')">
+                        </div>
+                        <div class="form-group">
+                            <div class="label-with-btn">
+                                <label>Ejemplo Letra (Opcional)</label>
+                                <span class="btn-clear-img" id="btn-clear-ejemplo-${i}" onclick="borrarImagen('input-ejemplo-${i}', 'out-ejemplo-${i}', null, 'box-ejemplo-${i}', 'btn-clear-ejemplo-${i}')">🗑️ BORRAR</span>
+                            </div>
+                            <input type="file" id="input-ejemplo-${i}" class="form-control file-input-clear" accept="image/*" onchange="cargarImagenOptimizada(event, 'out-ejemplo-${i}', null, 'box-ejemplo-${i}', 'btn-clear-ejemplo-${i}')">
+                        </div>
+                        <div class="form-group"><label>Descripción</label><textarea id="input-desc-${i}" class="form-control" oninput="actualizarVista()"></textarea></div>
+                    </div>
+                `;
+                outputContainer.innerHTML += `
+                    <div class="content-grid" id="box-proyecto-${i}">
+                        <div class="imagenes-col">
+                            <div class="img-container ref-container"><span id="placeholder-${i}" style="color:#aaa;">Sube imagen ${i}</span><img id="out-foto-${i}" src=""></div>
+                            <div class="img-container ej-container" id="box-ejemplo-${i}" style="display: none;"><div class="badge-ejemplo">EJEMPLO LETRA</div><img id="out-ejemplo-${i}" src=""></div>
+                        </div>
+                        <div class="detalles-box">
+                            <h3>Descripción del Proyecto ${i}</h3><p id="out-desc-${i}">Detalles del anuncio...</p>
+                            <div class="subtotal-proyecto-box"><span>Cantidad: <b id="out-cant-${i}">1</b></span><span>Subtotal: <b id="out-subtotal-proy-${i}">$0.00</b></span></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function cambiarCantidadProyectos() {
+            const num = parseInt(document.getElementById('num-proyectos').value);
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById('form-proyecto-' + i).style.display = (i <= num) ? "block" : "none";
+                document.getElementById('box-proyecto-' + i).style.display = (i <= num) ? "flex" : "none";
+            }
+            actualizarVista();
+        }
+
+        function actualizarVista() {
+            document.getElementById('out-folio').innerText = document.getElementById('input-folio').value || "#C-590";
+            document.getElementById('out-cliente').innerText = document.getElementById('input-cliente').value || "Nombre del Cliente";
+            const num = parseInt(document.getElementById('num-proyectos').value);
+            let subtotalGlobal = 0;
+            for (let i = 1; i <= 6; i++) {
+                if (i <= num) {
+                    document.getElementById('out-desc-' + i).innerText = document.getElementById('input-desc-' + i).value || "Detalles del anuncio...";
+                    const cant = parseFloat(document.getElementById('input-cant-' + i).value) || 1;
+                    const precioUnit = parseFloat(document.getElementById('input-precio-' + i).value) || 0;
+                    const subtotalProy = cant * precioUnit;
+                    document.getElementById('out-cant-' + i).innerText = cant;
+                    document.getElementById('out-subtotal-proy-' + i).innerText = formatearMoneda(subtotalProy);
+                    subtotalGlobal += subtotalProy;
+                }
+            }
+            
+            let descuento = Math.max(0, parseFloat(document.getElementById('input-descuento').value) || 0);
+            if (descuento > subtotalGlobal) descuento = subtotalGlobal;
+            
+            const subtotalConDescuento = subtotalGlobal - descuento;
+            const ivaGlobal = subtotalConDescuento * 0.16;
+            const totalFinal = subtotalConDescuento + ivaGlobal;
+
+            document.getElementById('out-subtotal-global').innerText = formatearMoneda(subtotalGlobal);
+            
+            const rowDescuento = document.getElementById('row-descuento');
+            const rowSubtotalDesc = document.getElementById('row-subtotal-desc');
+
+            if (descuento > 0) { 
+                rowDescuento.style.display = "flex"; 
+                document.getElementById('out-descuento').innerText = "-" + formatearMoneda(descuento); 
+                
+                rowSubtotalDesc.style.display = "flex";
+                document.getElementById('out-subtotal-desc').innerText = formatearMoneda(subtotalConDescuento);
+            } else { 
+                rowDescuento.style.display = "none"; 
+                rowSubtotalDesc.style.display = "none";
+            }
+            
+            document.getElementById('out-iva').innerText = formatearMoneda(ivaGlobal);
+            document.getElementById('out-total-final').innerText = formatearMoneda(totalFinal);
+
+            const garantia = document.getElementById('input-garantia').value;
+            const instalacion = document.getElementById('input-instalacion').value.trim();
+            document.getElementById('wrap-garantia').style.display = garantia ? "block" : "none"; document.getElementById('out-garantia').innerText = garantia;
+            document.getElementById('wrap-instalacion').style.display = instalacion ? "block" : "none"; document.getElementById('out-instalacion').innerText = instalacion;
+            document.getElementById('box-condiciones').style.display = (garantia || instalacion) ? "flex" : "none";
+        }
+
+        // Modificamos cargarImagenOptimizada para detectar proporciones (solo si se pasa containerGridId)
+        function cargarImagenOptimizada(event, imgId, placeholderId, boxIdToShow, btnClearId, containerGridId) {
+            const file = event.target.files[0];
+            if (!file) { 
+                limpiarImagenUI(imgId, placeholderId, boxIdToShow, btnClearId); 
+                if(containerGridId) document.getElementById(containerGridId).classList.remove('panoramico');
+                return; 
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const tempImg = new Image();
+                tempImg.onload = function() {
+                    const MAX_WIDTH = 700;
+                    let w = tempImg.width, h = tempImg.height;
+                    
+                    // Detectar si es significativamente más ancha que alta (ej. 1.8 veces o más ancha que alta)
+                    let esPanoramica = (w / h) > 1.6;
+
+                    if(containerGridId) {
+                        const gridContainer = document.getElementById(containerGridId);
+                        if(esPanoramica) {
+                            gridContainer.classList.add('panoramico');
+                        } else {
+                            gridContainer.classList.remove('panoramico');
+                        }
+                    }
+
+                    if (w > MAX_WIDTH || h > MAX_WIDTH) { 
+                        if (w > h) { h = Math.round((h * MAX_WIDTH) / w); w = MAX_WIDTH; } 
+                        else { w = Math.round((w * MAX_WIDTH) / h); h = MAX_WIDTH; } 
+                    }
+                    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d'); ctx.drawImage(tempImg, 0, 0, w, h);
+                    const base64Optimizada = canvas.toDataURL('image/jpeg', 0.5);
+                    
+                    setImagenUI(base64Optimizada, imgId, placeholderId, boxIdToShow, btnClearId);
+                    
+                    // Guardamos el atributo en la imagen para poder guardarlo luego en Firebase si es necesario
+                    if(containerGridId) {
+                        const imgNode = document.getElementById(imgId);
+                        if(esPanoramica) {
+                            imgNode.setAttribute('data-is-panoramica', 'true');
+                        } else {
+                            imgNode.removeAttribute('data-is-panoramica');
+                        }
+                    }
+
+                };
+                tempImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function borrarImagen(inputId, imgId, placeholderId, boxIdToShow, btnClearId) {
+            document.getElementById(inputId).value = "";
+            limpiarImagenUI(imgId, placeholderId, boxIdToShow, btnClearId);
+            
+            // Si es imagen de proyecto, quitamos clase panorámica
+            if(imgId.startsWith('out-foto-')) {
+                const num = imgId.split('-')[2];
+                document.getElementById(`box-proyecto-${num}`).classList.remove('panoramico');
+                document.getElementById(imgId).removeAttribute('data-is-panoramica');
+            }
+        }
+
+        function setImagenUI(srcBase64, imgId, placeholderId, boxIdToShow, btnClearId) {
+            const img = document.getElementById(imgId);
+            if(srcBase64 && srcBase64.startsWith('data:image')) {
+                img.src = srcBase64; img.style.display = "block";
+                if(placeholderId) document.getElementById(placeholderId).style.display = "none";
+                if(boxIdToShow) document.getElementById(boxIdToShow).style.display = "flex";
+                if(btnClearId) document.getElementById(btnClearId).style.display = "inline-block";
+            } else { 
+                limpiarImagenUI(imgId, placeholderId, boxIdToShow, btnClearId); 
+            }
+        }
+        
+        function limpiarImagenUI(imgId, placeholderId, boxIdToShow, btnClearId) {
+            const img = document.getElementById(imgId); img.src = ""; img.style.display = "none";
+            if(placeholderId) document.getElementById(placeholderId).style.display = "block";
+            if(boxIdToShow) document.getElementById(boxIdToShow).style.display = "none";
+            if(btnClearId) document.getElementById(btnClearId).style.display = "none";
+        }
+
+     function generarPDFHibrido() {
+            const original = document.getElementById('documento-imagen');
+            const btn = document.querySelector('.btn-generar');
+            let filenameInput = document.getElementById('input-filename').value.trim();
+            if (filenameInput === "") filenameInput = "Cotizacion_ACNES";
+            btn.innerHTML = "⏳ Renderizando..."; btn.disabled = true;
+
+            const contenedorFantasma = document.createElement('div');
+            contenedorFantasma.style.position = 'absolute'; contenedorFantasma.style.top = '-99999px'; 
+            contenedorFantasma.style.left = '0'; contenedorFantasma.style.width = '800px'; 
+            const clon = original.cloneNode(true);
+            clon.style.transform = 'none'; clon.style.zoom = '1'; clon.style.width = '800px'; clon.style.minWidth = '800px'; clon.style.position = 'relative'; clon.style.left = '0'; clon.style.margin = '0';
+            contenedorFantasma.appendChild(clon); document.body.appendChild(contenedorFantasma);
+
+            setTimeout(() => {
+                html2canvas(clon, { scale: 3, useCORS: true, backgroundColor: '#ffffff', width: 800, windowWidth: 800, scrollY: 0 }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+                    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+                    
+                    const pdfBlob = pdf.output('blob'); 
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    
+                    // 1. ABRIR EN NUEVA PESTAÑA PARA PREVISUALIZAR
+                    window.open(pdfUrl, '_blank'); 
+                    
+                    // 2. FORZAR LA DESCARGA EN PC Y CELULAR
+                    setTimeout(() => {
+                        const enlaceDescarga = document.createElement('a');
+                        enlaceDescarga.style.display = 'none';
+                        enlaceDescarga.href = pdfUrl;
+                        enlaceDescarga.download = filenameInput + '.pdf';
+                        document.body.appendChild(enlaceDescarga);
+                        enlaceDescarga.click();
+                        document.body.removeChild(enlaceDescarga);
+                    }, 300);
+
+                    document.body.removeChild(contenedorFantasma);
+                    btn.innerHTML = "✅ ¡PDF Exitoso!"; btn.style.backgroundColor = "#00e676";
+                    setTimeout(() => { btn.innerHTML = "📥 Generar PDF de Alta Calidad"; btn.style.backgroundColor = "#00fff7"; btn.disabled = false; }, 4000);
+                }).catch(error => {
+                    document.body.removeChild(contenedorFantasma); btn.innerHTML = "❌ Error PDF"; btn.style.backgroundColor = "#ff3333";
+                    setTimeout(() => { btn.innerHTML = "📥 Generar PDF de Alta Calidad"; btn.style.backgroundColor = "#00fff7"; btn.disabled = false; }, 3000);
+                });
+            }, 150);
+        }
+
+        // ==========================================
+        // FUNCIONES DEL BUZÓN DE PROSPECTOS (CRM)
+        // ==========================================
+        function escucharBuzon() {
+            db.collection("prospectos_landing")
+              .orderBy("timestamp", "desc")
+              .onSnapshot((snapshot) => {
+                  const contenedor = document.getElementById('buzon-prospectos');
+                  contenedor.innerHTML = "";
+                  
+                  if(snapshot.empty) {
+                      contenedor.innerHTML = "<div style='font-size:0.8rem; color:#888; margin-bottom:5px;'>No hay mensajes nuevos.</div>";
+                      return;
+                  }
+
+                  snapshot.forEach((doc) => {
+                      const prospecto = doc.data();
+                      const id = doc.id;
+                      
+                      let btnArchivo = "";
+                      if(prospecto.archivo && prospecto.archivo !== "") {
+                          btnArchivo = `<a href="${prospecto.archivo}" target="_blank" class="btn-buzon btn-b-archivo">📎 Ver Archivo</a>`;
+                      }
+
+                      let claseAtendido = prospecto.estado === 'atendido' ? 'atendido' : '';
+                      let btnAtenderTexto = prospecto.estado === 'atendido' ? '✅ Atendido' : 'Marcar Atendido';
+                      
+                      // Gafete de empresa (se muestra solo si el campo existe y no está vacío)
+                      let badgeEmpresa = prospecto.empresa ? `<span style="color:#00fff7; font-size:0.75rem; margin-left: 10px; border: 1px solid #00fff7; padding: 2px 6px; border-radius: 10px;">🏢 ${prospecto.empresa}</span>` : '';
+
+                      contenedor.innerHTML += `
+                          <div class="prospecto-item ${claseAtendido}">
+                              <div class="prospecto-header">
+                                  <div class="prospecto-nombre">👤 ${prospecto.nombre} ${badgeEmpresa}</div>
+                                  <div class="prospecto-fecha">${prospecto.fechaRegistro || ''}</div>
+                              </div>
+                              <div class="prospecto-contacto">
+                                  📞 <a href="tel:${prospecto.telefono}" style="color:#00fff7; text-decoration:none;">${prospecto.telefono || 'Sin teléfono'}</a> | 
+                                  ✉️ <a href="mailto:${prospecto.email}" style="color:#00fff7; text-decoration:none;">${prospecto.email}</a>
+                              </div>
+                              <div class="prospecto-mensaje">
+                                  ${prospecto.mensaje}
+                              </div>
+                              <div class="prospecto-actions">
+                                  ${btnArchivo}
+                                  <button class="btn-buzon btn-b-atender" onclick="marcarProspectoAtendido('${id}', '${prospecto.estado}')">${btnAtenderTexto}</button>
+                                  <button class="btn-buzon btn-b-borrar" onclick="borrarProspecto('${id}')">🗑️ Borrar</button>
+                              </div>
+                          </div>
+                      `;
+                  });
+              }, (error) => {
+                  console.error("Error cargando buzón: ", error);
+              });
+        }
+
+        function marcarProspectoAtendido(id, estadoActual) {
+            let nuevoEstado = estadoActual === 'atendido' ? 'nuevo' : 'atendido';
+            db.collection("prospectos_landing").doc(id).update({ estado: nuevoEstado })
+              .catch(err => alert("Error al actualizar: " + err));
+        }
+
+        function borrarProspecto(id) {
+            if(confirm("¿Estás seguro de que quieres borrar este mensaje permanentemente?")) {
+                db.collection("prospectos_landing").doc(id).delete()
+                  .catch(err => alert("Error al borrar: " + err));
+            }
+        }
+    </script>
+</body>
+</html>
